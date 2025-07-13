@@ -55,7 +55,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="breachaleart"
+        name="breachalert"
         options={{
           title: 'breachalert',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,

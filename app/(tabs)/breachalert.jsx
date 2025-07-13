@@ -1,79 +1,96 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, ImageBackground } from 'react-native';
-import back from '@/assets/images/background.png'; 
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { getBreachAlerts } from '@/services/api.js'; // ✅ import service
+import back from '@/assets/images/background.png';
+import { ImageBackground } from 'react-native';
 
-const BreachAlertsScreen = ({ route }) => {
+const BreachAlertScreen = ({ route }) => {
   const userId = route?.params?.userId || 'user123';
-  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [breachData, setBreachData] = useState(null);
 
   useEffect(() => {
-    fetch(`https://your-backend-url.com/api/breaches/${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        setLogs(data);
+    const fetchAlerts = async () => {
+      try {
+        const data = await getBreachAlerts(userId);
+        setBreachData(data);
+      } catch (error) {
+        console.error('Failed to fetch breach alerts:', error);
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      }
+    };
+
+    fetchAlerts();
   }, []);
 
   if (loading) {
-    return <ActivityIndicator style={{ marginTop: 100 }} size="large" color="#000" />;
+    return <ActivityIndicator size="large" color="#fff" />;
   }
 
   return (
-    <View style={styles.container}>
-      <ImageBackground source={back} style={styles.image} resizeMode='cover'>
-        <Text style={styles.title}>Breach Alerts</Text>
-        <FlatList
-          data={logs}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.alertBox}>
-              <Text style={styles.message}>{item.message}</Text>
-              <Text style={styles.time}>{new Date(item.timestamp).toLocaleString()}</Text>
-            </View>
-          )}
-        />
-      </ImageBackground>
-    </View>
+    <ImageBackground source={back} style={styles.background}>
+      <View style={styles.container}>
+        <Text style={styles.header}> Breach Alerts</Text>
+
+        {breachData?.breached ? (
+          <>
+            <Text style={styles.warning}> Data Leak Detected!</Text>
+            <FlatList
+              data={breachData.details}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.alertBox}>
+                  <Text style={styles.alertText}>Field: {item.field}</Text>
+                  <Text style={styles.alertText}>Leaked on: {item.leakedOn}</Text>
+                  <Text style={styles.alertText}>Masked Value: {item.value}</Text>
+                </View>
+              )}
+            />
+          </>
+        ) : (
+          <Text style={styles.safe}> Your data is safe.</Text>
+        )}
+      </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    padding: 20
+    resizeMode: 'cover',
+    justifyContent: 'center',
   },
-  title: {
-    fontSize: 22,
+  container: {
+    padding: 20,
+    flex: 1,
+  },
+  header: {
+    fontSize: 26,
     fontWeight: 'bold',
+    color: 'white',
     marginBottom: 20,
-    color: '#000'
+  },
+  warning: {
+    color: 'orange',
+    fontSize: 18,
+    marginBottom: 10,
+  },
+  safe: {
+    color: 'white',
+    fontSize: 18,
   },
   alertBox: {
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#e74c3c',
-    backgroundColor: '#fdecea',
+    backgroundColor: '#fff2e6',
+    padding: 10,
+    borderRadius: 8,
     marginBottom: 10,
-    borderRadius: 8
   },
-  message: {
-    color: '#c0392b',
-    fontWeight: 'bold'
+  alertText: {
+    fontSize: 16,
+    color: '#000',
   },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  time: {
-    marginTop: 5,
-    color: '#555'
-  }
 });
 
-export default BreachAlertsScreen;
+export default BreachAlertScreen;
